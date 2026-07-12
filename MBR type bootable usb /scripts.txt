@@ -45,3 +45,47 @@ work with a system.
 
 
 # Now Lets make a usb that can be bootable with your bios
+
+Here we need tht program 'parted' to make partitions.
+Every thing from now on is a super user command
+
+1. first of all we need to make a partition table.
+
+sudo parted /dev/sdX -- mklabel msdos
+
+sudo — run this as admin/root. Needed because writing to a raw disk is a privileged operation.
+parted — the program name. It's a command-line partitioning tool
+/dev/sdX — this is the whole disk, not a partition. In Linux, disks show up as device files. X may be any letter
+-- — just tells parted "everything after this is arguments, not options,"
+mklabel msdos — "make a partition label," meaning create a partition table. msdos is the name parted uses for the classic MBR-style table
+
+when making the table. it also take the sapce for whole MBR.
+
+2. Now lets make a parimary partition starts from 1MiB
+
+sudo parted /dev/sdX -- mkpart primary fat32 1MiB 100%
+
+mkpart — "make a partition"
+MBR tables support two kinds of partitions: "primary" (up to 4 of them) and "logical" (extra ones nested inside a special primary partition, for when you need more than 4). We just want one normal partition, so: primary.
+fat32 — tells parted what filesystem you intend to put here. Note: this doesn't actually format it yet — it just writes a hint into the partition table for other tools to see. You still have to format separately
+1MiB 100% — the start and end position of this partition. Start at 1 MiB into the disk (leaving that gap we discussed for GRUB's stage 1.5), and end at 100% (use the rest of the disk).
+
+
+3. Now we have to assign an active partition flag on partition 1. It is conventional
+
+sudo parted /dev/sdX -- set 1 boot on
+
+set 1 boot on — "on partition number 1, turn on the flag called boot." This is the "active partition" flag some old BIOSes check before they'll even look at a disk. It doesn't do anything technical by itself — it's just a marker/flag some firmware insists on seeing before proceeding.
+
+
+4. Now we can format the disk and add the file system. The prevoius stepps are also appield in this step
+
+sudo mkfs.vfat -F32 -n UBUNTU /dev/sdX1
+
+mkfs.vfat — "make filesystem, vfat type." This is the actual formatting step — it writes the real FAT32 filesystem data structures onto that partition (previously we only labeled it as fat32 in the partition table; now we actually build one).
+-F32 — a flag specifically telling mkfs.vfat to use the FAT32 variant. (Because some times it uses FAT16)
+-n UBUNTU — sets the volume label (the name you'd see in a file manager) to "UBUNTU". Purely cosmetic, just for your convenience.
+/dev/sdX1 — the target: partition 1 specifically, not the whole disk.
+
+
+See the scripts1.txt for the next steps
