@@ -1,0 +1,79 @@
+sudo parted /dev/sdX -- mklabel msdos
+sudo parted /dev/sdX -- mkpart primary fat32 1Mib 100%
+sudo parted /dev/sdX -- set 1 boot on
+sudo mkfs.vfat -F32 -n UBUNTU /dev/sdX1
+
+5. now that we have made our usb partitions, we need to 'mount' it to our computer.
+
+mount means : a doorway in your existing filesystem tree that you can point at another filesystem.
+
+i. so that first we need to make the entry point to our file system from our system. it is just a
+usual directory.
+
+sudo mkdir /mnt/usb
+
+ii. now we can make the connection using 'mount' command
+
+sudo mount /dev/sdX1 /mnt/usb
+
+now the usb is connected to your computer. you can use usual command on it to copy, cut, etc.
+
+6. We should instsll the boot sytem
+
+we have leave the space for MBR from above commands. now we need to install the programs for
+stage 1, and stage 1.5.
+
+we do it using 'grub-install' tool. it is the too that write the machine code for that space.
+otherwise we have to write the Machinecode by ourselse to make the system link and understand
+file system for bootable. (stage 1, 1.5)
+
+NOTE : if you encounter error while intslling the code. which mentions that such file or directory, read the scripts2.txt
+
+sudo grub-install --target=i386-pc --boot-directory=/mnt/usb/boot /dev/sdX
+
+what this do is it writes stage 1 and 1.5. 1.5 is a program that undestand a file system. so that computer can read files and directories. we put a program that runs on booting. it is the one that we used to select what bootoptions, os, kernel to load. we can make that program inside a partition. because it can be read after 1.5. thats why here we are making a /boot folder inside the partiton mouted and tell grub-intaller to use it as boot-direcoty. so that it makesthe relevent program inside it.
+
+grub-install — the program that writes GRUB's stage 1 (into the MBR) and stage 1.5 (into the gap), as described earlier.
+--target=i386-pc — tells it which kind of boot environment to build for. i386-pc specifically means "legacy BIOS boot" (the name is historical/generic, it's not literally about 32-bit CPUs). The other option you'd use for UEFI is x86_64-efi.
+--boot-directory=/mnt/usb/boot — tells grub-install where to also copy GRUB's stage 2 files and modules (the /boot/grub/ folder full of .mod files, fonts, etc.) — in this case, onto your mounted USB stick rather than your real computer's own /boot.
+/dev/sdX — the whole disk again (not a partition!) — because stage 1 goes into the MBR (sector 0 of the whole disk) and stage 1.5 goes into the gap before partition 1, neither of which belongs to any partition.
+
+
+7. Configure the grub boot
+
+now grub has installed. you can configure how the boot should works using file 
+/mnt/usb/boot/grub/grub.cfg
+
+for example: use the following for ubuntu iso
+
+set timeout=10
+set default=0
+
+menuentry "Ubuntu Live" {
+    linux /casper/vmlinuz boot=casper quiet splash
+    initrd /casper/initrd
+}
+
+
+I will add an explaination of the code later. in scripts4.txt
+
+FINAL : 
+
+use 7zip to extract the content of the iso to mounted partition. (Or you can use a mount loop)
+
+sudo 7z x /path/to/ubuntu.iso -o/mnt/usb
+
+Here you will ask a some file overwrite messages: if you encounter that read the following
+
+Ubuntu's ISOs are built as "hybrid ISOs" — meaning the same file is valid both as an ISO 9660 filesystem and as a raw disk image with its own partition table (GPT), stuffed in after the main ISO 9660 structure so the file can be dd'd directly onto a USB stick as an alternative method to what we're doing.
+7z is designed to understand ISO 9660, reads that part fine, then notices "hey, there's more data after where ISO 9660 said the archive should end" (that's the GPT structure) and warns you about it. It's just 7z saying "there's a second thing here I'm not extracting, FYI" — not a sign of corruption or a problem for what you're doing.
+
+Earlier, your grub-install command already wrote its own /mnt/usb/boot/grub/ folder onto the partition — that's where stage 2, modules, and fonts (like unicode.pf2) came from.
+
+Ubuntu's ISO also ships its own complete boot/grub/ folder — because the ISO is designed to be bootable all by itself (that hybrid design from Thing 1). So now both your hand-run grub-install and the ISO's own files are trying to occupy the same path: /mnt/usb/boot/grub/fonts/unicode.pf2, and 7z is asking what to do about every file where this collision happens.
+
+# What you should actually pick
+
+Type A (Always) and press Enter.
+
+Reasoning: the ISO's own boot/grub/ folder is the complete, correct, matched set of GRUB files for booting this specific Ubuntu release — it's what Ubuntu's own installer/live-boot process was built and tested against. Letting it overwrite your earlier hand-run grub-install output is fine and actually preferable, since it guarantees the modules/fonts match the kernel version on this ISO. You're not losing anything important — the one thing you'll still need to do is write your own grub.cfg by hand afterward (since the ISO's own grub.cfg is set up for its own boot menu structure, not necessarily matching how you want to reference things) — or, alternatively, just inspect and adapt the ISO's existing grub.cfg/config files rather than writing one from scratch.
