@@ -1,0 +1,47 @@
+There are two different boot models running on modern pcs.
+
+1. Leagacy BIOS boot (MBR-style)
+2. UEFI boot (GPT-style)
+
+Here we will discuss the Leagacy BIOS boot system
+
+The firmware(BIOS) doesn't understand filesystem at all. It only can read the first 512 bytes
+of a disk. We call it MASTER BOOT RECORD (MBR). What bios do is , it copies the MBR into 
+memory at address 0x7C00 and jumps to it.
+
+Now lets see whats in that 512 bytes.
+
+* 446 bytes : This a part of code. How ever it is not enogh to write a program that can 
+understand a file system. So what program here is doing that it stores a bigger code which is
+in somewhere else to memory and hands off the control to it. That specific program is able to
+understand a file system. 
+
+Now lets talk about where this big program is at. where the 446 byte program points to.
+
+When we create the MBR we create at the very first of the disk. Because BIOS can only read 
+the fist 512 bytes of a disk. Then we make out partions. Partition numbers are starting from
+1. When we create a partition we need to mention the start point and the end point. Our first
+partition usually starts from 1MiB location. It may continue to all space or some range.
+
+Note that first is MBR, then Partition starts from 1MiB. so that between those points there 
+is an unused space by anything.
+
+we use that space to put our bigger program that can understand the file system.
+
+There are two fancy names we need to rember in this context. we call that 446 byte program as
+stage 1. The program resides in the gap is called stage 1.5.
+
+* 64 bytes : above we talked about the 446 bytes of 512. Lets talk about next 64 bytes now.
+it is used for something called 'partition table'. It is table is a datastructure that tell
+the bios how our device is divided. it contains starting and ending locations, sizes, and types of each partitions.
+
+It has 4 entries of 16 bytes. Thats is why MBR disks cant have more than 4 primary partitions.
+
+Without this your partition managers cant read the disk properly most of the time. If you 
+removed this accidently, you may have to make it again. Otherwise your usb or disk will not
+work with a system.
+
+* 2 byte : the remaining 2 bytes of 512 bytes is used for 'signature'. it is a value '0x55AA'. It tell the bios that the divece is bootable.
+
+
+# Now Lets make a usb that can be bootable with your bios
