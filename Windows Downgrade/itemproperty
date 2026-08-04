@@ -1,0 +1,3 @@
+Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion" -Name EditionID -Type String -Value Core;
+Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion" -Name CompositionEditionID -Value "Core";
+Set-ItemProperty -Path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion" -Name ProductName -Value "Windows 11 Home";
